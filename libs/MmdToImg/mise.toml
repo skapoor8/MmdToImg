@@ -1,0 +1,29 @@
+[tasks.install]
+description = "Check the Mermaid CLI dependency"
+run = "mmdc --version"
+
+[tasks.build]
+description = "Check Lua syntax"
+dir = "{{config_root}}/../.."
+run = "nvim --headless -u NONE -l tests/syntax.lua"
+
+[tasks.test]
+description = "Test rendering and Neovim integration"
+dir = "{{config_root}}/../.."
+run = "nvim --headless -u NONE -l tests/smoke.lua"
+
+[tasks.lint]
+description = "Check Lua formatting"
+dir = "{{config_root}}/../.."
+run = "stylua --check lua libs/MmdToImg/lua tests"
+
+[tasks."lint:fix"]
+description = "Format Lua files"
+dir = "{{config_root}}/../.."
+run = "stylua lua libs/MmdToImg/lua tests"
+
+[tasks.format]
+depends = ["lint:fix"]
+
+[tasks."format:check"]
+depends = ["lint"]

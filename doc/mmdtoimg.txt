@@ -1,0 +1,47 @@
+*mmdtoimg.txt*  Render Mermaid diagrams with light and dark themes
+
+MmdToImg requires Neovim 0.10 or later and the Mermaid CLI (mmdc).
+
+SETUP                                                       *mmdtoimg-setup*
+
+Call require("mmdtoimg").setup() in your Neovim configuration.
+Saving a .mmd file generates an adaptive SVG and light/dark PNGs beside it.
+
+COMMANDS                                                   *mmdtoimg-commands*
+
+:MmdToImg [file]                                            *:MmdToImg*
+    Render the current .mmd file or the specified file.
+
+:MmdToImgAll [directory]                                    *:MmdToImgAll*
+    Render all .mmd files beneath the directory, Git root, or current directory.
+    Skip .git, node_modules, target, and .cache directories.
+
+CONFIGURATION                                              *mmdtoimg-config*
+>
+    require("mmdtoimg").setup({
+        command = "mmdc",
+        auto_render = true,
+        scale = 2,
+        timeout = 120000,
+        -- light_config = "/path/to/light.json",
+        -- dark_config = "/path/to/dark.json",
+        -- puppeteer_config = "/path/to/puppeteer.json",
+    })
+<
+Set auto_render to false to render only through commands.
+Scale multiplies the PNG resolution. Timeout is milliseconds per CLI command.
+Custom Mermaid configurations must produce the same layout for both themes.
+
+SNACKS INTEGRATION                                         *mmdtoimg-snacks*
+
+Use this resolver in Snacks' image configuration:
+>
+    resolve = function(file, src)
+        return require("mmdtoimg").resolve(file, src)
+    end
+<
+SVG links resolve to the PNG matching vim.o.background when it exists.
+Images refresh after generation and when the editor background changes.
+Browser SVGs select their theme with prefers-color-scheme.
+
+vim:tw=78:ts=4:ft=help:norl:

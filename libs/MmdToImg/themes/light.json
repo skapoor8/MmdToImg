@@ -1,0 +1,25 @@
+{
+  "theme": "base",
+  "look": "classic",
+  "themeVariables": {
+    "fontFamily": "Arial, Helvetica, sans-serif",
+    "fontSize": "17px",
+    "primaryColor": "#eff6ff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#93c5fd",
+    "lineColor": "#64748b",
+    "secondaryColor": "#f8fafc",
+    "tertiaryColor": "#f5f3ff",
+    "clusterBkg": "#f8fafc",
+    "clusterBorder": "#cbd5e1",
+    "edgeLabelBackground": "#ffffff"
+  },
+  "flowchart": {
+    "curve": "linear",
+    "nodeSpacing": 36,
+    "rankSpacing": 56,
+    "padding": 18,
+    "htmlLabels": false
+  },
+  "themeCSS": ".node rect {\n  rx: 10px;\n  ry: 10px;\n  filter: none;\n}\n.cluster rect {\n  rx: 14px;\n  ry: 14px;\n  filter: none;\n}\n.nodeLabel {\n  font-weight: 500;\n}\n.cluster-label {\n  font-weight: 600;\n}\n.edgeLabel {\n  color: #475569;\n  font-size: 14px;\n}\n\n.node.frontend rect { fill: #ecfdf5; stroke: #6ee7b7; } .node.frontend .nodeLabel { color: #064e3b; }\n.node.runtime rect { fill: #eff6ff; stroke: #93c5fd; } .node.runtime .nodeLabel { color: #1e3a8a; }\n.node.library rect { fill: #f5f3ff; stroke: #c4b5fd; } .node.library .nodeLabel { color: #4c1d95; }\n.node.source rect { fill: #f8fafc; stroke: #cbd5e1; } .node.source .nodeLabel { color: #334155; }\n.node.tool rect { fill: #fffbeb; stroke: #fcd34d; } .node.tool .nodeLabel { color: #78350f; }\n.node.artifact rect { fill: #ecfdf5; stroke: #6ee7b7; } .node.artifact .nodeLabel { color: #064e3b; }"
+}

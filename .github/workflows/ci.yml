@@ -1,0 +1,36 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        neovim: ["0.10.4", "0.12.6"]
+    env:
+      MMD_TO_IMG_PUPPETEER_CONFIG: ${{ github.workspace }}/tests/puppeteer.json
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@v5.1.2
+      - name: Install the Neovim version under test
+        env:
+          NEOVIM_VERSION: ${{ matrix.neovim }}
+        run: |
+          curl -fsSL "https://github.com/neovim/neovim/releases/download/v${NEOVIM_VERSION}/nvim-linux-x86_64.tar.gz" -o "$RUNNER_TEMP/neovim.tar.gz"
+          tar -xzf "$RUNNER_TEMP/neovim.tar.gz" -C "$RUNNER_TEMP"
+      - name: Check Lua formatting
+        run: mise run //libs/MmdToImg:lint
+      - name: Check Lua syntax
+        run: |
+          "$RUNNER_TEMP/nvim-linux-x86_64/bin/nvim" --headless -u NONE -l tests/syntax.lua
+      - name: Test rendering and editor integration
+        run: |
+          "$RUNNER_TEMP/nvim-linux-x86_64/bin/nvim" --headless -u NONE -l tests/smoke.lua
