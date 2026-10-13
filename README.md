@@ -6,18 +6,13 @@ Use a normal Markdown image link to the SVG.
 Browsers select its theme with `prefers-color-scheme`.
 The optional Snacks integration displays the PNG that matches `vim.o.background`.
 
-## Requirements
+![Mermaid diagram preview in Neovim](assets/neovim-preview.png)
 
-MmdToImg requires Neovim 0.10 or later and the Mermaid CLI (`mmdc`) on your PATH.
-Install the Mermaid CLI with npm:
+## Prerequisites
 
-```sh
-npm install -g @mermaid-js/mermaid-cli
-```
-
-The CLI installs Puppeteer, which uses Chromium to render diagrams.
-For terminal image previews, Snacks also needs a supported terminal such as Ghostty or Kitty.
-Generation works without Snacks or terminal image support.
+- Neovim 0.10 or later.
+- Mermaid CLI (`mmdc`) on your PATH: `npm install -g @mermaid-js/mermaid-cli`.
+- Optional image previews: Snacks, a Markdown Treesitter parser, and a supported terminal such as Ghostty or Kitty.
 
 ## Installation
 
@@ -61,7 +56,7 @@ git clone --branch v0.1.0 --depth 1 https://github.com/skapoor8/MmdToImg.git \
 Then call `require("mmdtoimg").setup()` from your Neovim configuration.
 Adjust the package directory if you use a custom Neovim data directory.
 
-## Use
+## Usage
 
 Save a `.mmd` file to generate its three image files.
 For example, `docs/diagrams/architecture.mmd` produces `architecture.svg`, `architecture.light.png`, and `architecture.dark.png` in the same directory.
@@ -88,27 +83,12 @@ Failed Mermaid commands leave the existing images in place.
 
 ## Snacks image previews
 
-Configure Snacks to use MmdToImg's resolver, which selects the matching PNG:
-
-```lua
-{
-  "folke/snacks.nvim",
-  dependencies = { "skapoor8/MmdToImg" },
-  opts = {
-    image = {
-      enabled = true,
-      doc = { enabled = true, inline = true },
-      resolve = function(file, src)
-        return require("mmdtoimg").resolve(file, src)
-      end,
-    },
-  },
-}
-```
-
+MmdToImg detects Snacks and configures image previews automatically.
+No resolver configuration is needed.
+It preserves an existing custom resolver and selects the matching PNG for Mermaid SVG links.
 Markdown previews refresh after rendering and when the editor background changes.
 Use `:set background=light` or `:set background=dark` to select a preview theme.
-The SVG selects its browser theme independently of Neovim.
+Set `snacks = false` in MmdToImg's configuration to disable automatic integration.
 
 ## Configuration
 
@@ -116,6 +96,7 @@ The SVG selects its browser theme independently of Neovim.
 require("mmdtoimg").setup({
   command = "mmdc",
   auto_render = true,
+  snacks = true,
   scale = 2,
   timeout = 120000,
   -- light_config = "/path/to/light.json",
@@ -132,30 +113,22 @@ Custom theme files must produce the same layout in both themes.
 
 ## Development
 
-Premise initializes this repository as a monorepo with one language-agnostic library.
 The implementation and themes live in `libs/MmdToImg`.
-The root `lua/mmdtoimg/init.lua` entry point lets Neovim find the library through its standard runtime directory.
-
-Install the development tools and run the library tasks:
+The root Lua entry point lets Neovim load the plugin from this repository.
+Install the tools and run the checks:
 
 ```sh
 mise trust
 mise install
-pm run MmdToImg:build
-pm run MmdToImg:lint
-pm run MmdToImg:test
-```
-
-Without Premise, run the same tasks with Mise:
-
-```sh
+mise run //libs/MmdToImg:install
 mise run //libs/MmdToImg:build
 mise run //libs/MmdToImg:lint
 mise run //libs/MmdToImg:test
 ```
 
-The tests cover image generation, theme selection, directory exclusions, rendering on save, and failed commands.
+The tests cover rendering, theme selection, directory exclusions, rendering on save, and failed commands.
 CI runs the tests on Neovim 0.10.4 and 0.12.6.
+The plugin installs from Git and requires no uploaded release artifacts.
 
 ## License
 
