@@ -1,6 +1,7 @@
 -- Run from the plugin directory: nvim --headless -u NONE -l tests/smoke.lua
 vim.opt.runtimepath:prepend(vim.uv.cwd())
 local plugin = require("mmdtoimg")
+dofile("tests/snacks.lua")
 local temp = vim.fn.tempname()
 vim.fn.mkdir(temp .. "/node_modules", "p")
 vim.fn.writefile({ "flowchart LR", "A[Source] --> B[Image]" }, temp .. "/example.mmd")

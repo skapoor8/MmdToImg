@@ -21,6 +21,7 @@ CONFIGURATION                                              *mmdtoimg-config*
     require("mmdtoimg").setup({
         command = "mmdc",
         auto_render = true,
+        snacks = true,
         scale = 2,
         timeout = 120000,
         -- light_config = "/path/to/light.json",
@@ -34,12 +35,10 @@ Custom Mermaid configurations must produce the same layout for both themes.
 
 SNACKS INTEGRATION                                         *mmdtoimg-snacks*
 
-Use this resolver in Snacks' image configuration:
->
-    resolve = function(file, src)
-        return require("mmdtoimg").resolve(file, src)
-    end
-<
+MmdToImg detects Snacks and enables image previews automatically.
+No additional Snacks configuration is needed.
+An existing custom resolver remains available for other image sources.
+Set snacks = false in setup() to disable automatic integration.
 SVG links resolve to the PNG matching vim.o.background when it exists.
 Images refresh after generation and when the editor background changes.
 Browser SVGs select their theme with prefers-color-scheme.

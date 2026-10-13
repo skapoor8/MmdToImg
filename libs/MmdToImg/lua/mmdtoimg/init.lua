@@ -1,7 +1,7 @@
 local M = {}
 local uv = vim.uv
 local plugin_dir = vim.fs.dirname(vim.fs.dirname(vim.fs.dirname(debug.getinfo(1, "S").source:sub(2))))
-local options = { command = "mmdc", auto_render = true, scale = 2, timeout = 120000 }
+local options = { command = "mmdc", auto_render = true, snacks = true, scale = 2, timeout = 120000 }
 local pending, queue, active = {}, {}, false
 
 local function read(path)
@@ -66,6 +66,34 @@ function M.resolve(file, src)
 		end
 	end
 	return cached
+end
+
+-- Attach after Snacks loads without requiring it for users who do not install it.
+local snacks_resolver
+function M.attach_snacks()
+	local snacks = package.loaded["snacks"]
+	if not options.snacks or not snacks or not snacks.did_setup then
+		return
+	end
+	snacks.config.image.enabled = true
+	local image = snacks.image
+	image.config.enabled = true
+	image.config.doc.enabled = true
+	if image.config.resolve ~= snacks_resolver or not snacks_resolver then
+		local previous = image.config.resolve
+		snacks_resolver = function(file, src)
+			local resolved = previous and previous(file, src) or nil
+			return M.resolve(file, resolved or src) or resolved
+		end
+		image.config.resolve = snacks_resolver
+		snacks.config.image.resolve = snacks_resolver
+	end
+	image.setup()
+	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+		if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].filetype == "markdown" then
+			image.doc.attach(buf)
+		end
+	end
 end
 
 local run_next
@@ -245,7 +273,19 @@ function M.setup(opts)
 			end,
 		})
 	end
-	vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "ColorScheme" }, { group = group, callback = M.refresh })
+	vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "ColorScheme", "VimEnter" }, {
+		group = group,
+		callback = function()
+			M.attach_snacks()
+			M.refresh()
+		end,
+	})
+	vim.api.nvim_create_autocmd("User", {
+		group = group,
+		pattern = { "LazyLoad", "VeryLazy" },
+		callback = M.attach_snacks,
+	})
+	M.attach_snacks()
 	vim.api.nvim_create_autocmd("OptionSet", {
 		group = group,
 		pattern = "background",
