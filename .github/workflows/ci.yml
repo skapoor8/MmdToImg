@@ -20,6 +20,8 @@ jobs:
         with:
           persist-credentials: false
       - uses: jdx/mise-action@v5.1.2
+      - name: Install the pinned renderer
+        run: mise run //libs/MmdToImg:install
       - name: Install the Neovim version under test
         env:
           NEOVIM_VERSION: ${{ matrix.neovim }}
@@ -34,3 +36,40 @@ jobs:
       - name: Test rendering and editor integration
         run: |
           "$RUNNER_TEMP/nvim-linux-x86_64/bin/nvim" --headless -u NONE -l tests/smoke.lua
+
+  release:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    concurrency:
+      group: stable-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - name: Plan the stable version with Premise
+        id: plan
+        uses: cloudvoyant/premise@v0.4.3
+        with:
+          command: plan
+          flow: on-merge
+          release: auto
+          install-premise: pre-built
+          premise-version: v0.4.3
+      - name: Publish the version tag with Premise
+        if: steps.plan.outputs.release_version != ''
+        uses: cloudvoyant/premise@v0.4.3
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          command: release
+          flow: on-merge
+          release: none
+          channel: stable
+          version: ${{ steps.plan.outputs.release_version }}
+          install-premise: skip

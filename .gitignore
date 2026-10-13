@@ -1,3 +1,4 @@
 *.mmdtoimg-tmp
 .DS_Store
 doc/tags
+node_modules/

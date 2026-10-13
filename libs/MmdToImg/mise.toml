@@ -1,6 +1,7 @@
 [tasks.install]
-description = "Check the Mermaid CLI dependency"
-run = "mmdc --version"
+description = "Install the pinned renderer for development"
+dir = "{{config_root}}/../.."
+run = "npm ci"
 
 [tasks.build]
 description = "Check Lua syntax"
