@@ -13,7 +13,8 @@
     "clusterBkg": "#111827",
     "clusterBorder": "#475569",
     "edgeLabelBackground": "#0f172a",
-    "darkMode": true
+    "darkMode": true,
+    "background": "#0f172a"
   },
   "flowchart": {
     "curve": "linear",

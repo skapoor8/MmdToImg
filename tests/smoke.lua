@@ -2,9 +2,16 @@
 vim.opt.runtimepath:prepend(vim.uv.cwd())
 local plugin = require("mmdtoimg")
 dofile("tests/snacks.lua")
+dofile("tests/inline.lua")
+dofile("tests/policy.lua")
+dofile("tests/scroll.lua")
+dofile("tests/regressions.lua")
+dofile("tests/themes.lua")
+dofile("tests/automatic.lua")
 local temp = vim.fn.tempname()
 vim.fn.mkdir(temp .. "/node_modules", "p")
 vim.fn.writefile({ "flowchart LR", "A[Source] --> B[Image]" }, temp .. "/example.mmd")
+vim.fn.writefile({ "sequenceDiagram", "Alice->>Bob: Hello", "Bob-->>Alice: Hi" }, temp .. "/sequence.mmd")
 vim.fn.writefile({ "invalid mermaid" }, temp .. "/node_modules/ignored.mmd")
 local notices = {}
 vim.notify = function(message)
@@ -15,7 +22,7 @@ local ok, err = pcall(function()
 	local done, failure = false, nil
 	plugin.render_all(temp, function(render_err, count)
 		failure = render_err
-		assert(count == 1, "Excluded directory was scanned")
+		assert(count == 2, "Excluded directory was scanned")
 		done = true
 	end)
 	assert(
@@ -27,6 +34,41 @@ local ok, err = pcall(function()
 	assert(not failure, failure)
 	local svg = table.concat(vim.fn.readfile(temp .. "/example.svg"), "\n")
 	assert(svg:find("prefers%-color%-scheme: dark"))
+	for _, name in ipairs({ "example", "sequence" }) do
+		local rendered = table.concat(vim.fn.readfile(temp .. "/" .. name .. ".svg"), "\n")
+		local ids = {}
+		for id in rendered:gmatch(' id="([^"]+)"') do
+			assert(not ids[id], "Duplicate ID in rendered " .. name .. ": " .. id)
+			ids[id] = true
+		end
+		-- Mermaid emits unused style rules with dangling references for other diagram types.
+		local markup = rendered:gsub("<style[^>]*>.-</style>", "")
+		for id in markup:gmatch("url%(#([^%)]+)%)") do
+			assert(ids[id], "Unresolved SVG reference: " .. id)
+		end
+	end
+	local normal = vim.api.nvim_get_hl(0, { name = "Normal" })
+	vim.api.nvim_set_hl(0, "Normal", { fg = "#d0d0d0", bg = "#102030" })
+	plugin.setup({ theme = "nvim" })
+	done, failure = false, nil
+	plugin.render(temp .. "/example.mmd", function(render_err)
+		failure = render_err
+		done = true
+	end)
+	assert(
+		vim.wait(120000, function()
+			return done
+		end),
+		"Editor-themed rendering timed out"
+	)
+	vim.api.nvim_set_hl(0, "Normal", normal)
+	plugin.setup({ theme = "default" })
+	assert(not failure, failure)
+	svg = table.concat(vim.fn.readfile(temp .. "/example.svg"), "\n")
+	assert(
+		svg:find("#102030", 1, true) and svg:find("#d0d0d0", 1, true),
+		"Real Mermaid output must contain the editor palette"
+	)
 	for _, theme in ipairs({ "light", "dark" }) do
 		vim.o.background = theme
 		local cached = assert(plugin.resolve(temp .. "/README.md", "example.svg"))

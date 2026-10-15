@@ -12,7 +12,9 @@
     "tertiaryColor": "#f5f3ff",
     "clusterBkg": "#f8fafc",
     "clusterBorder": "#cbd5e1",
-    "edgeLabelBackground": "#ffffff"
+    "edgeLabelBackground": "#ffffff",
+    "background": "#ffffff",
+    "darkMode": false
   },
   "flowchart": {
     "curve": "linear",

@@ -20,7 +20,12 @@ local image = {
 	setup = function()
 		setups = setups + 1
 	end,
-	doc = { attach = function() end },
+	doc = {
+		attach = function() end,
+		find = function(_, callback)
+			callback({})
+		end,
+	},
 }
 local snacks = { did_setup = false, config = { image = {} }, image = image }
 local ok, err = pcall(function()
@@ -46,6 +51,31 @@ local ok, err = pcall(function()
 	plugin.setup({ snacks = true })
 	assert(package.loaded.snacks == nil, "Snacks must remain optional")
 end)
+-- Synthetic image refreshes must not notify global scroll listeners.
+local refresh_buf = vim.api.nvim_create_buf(false, true)
+vim.bo[refresh_buf].filetype = "markdown"
+vim.b[refresh_buf].snacks_image_attached = true
+local image_refreshes, scroll_refreshes = 0, 0
+local refresh_group = vim.api.nvim_create_augroup("snacks.image.inline." .. refresh_buf, { clear = true })
+local scroll_group = vim.api.nvim_create_augroup("MmdToImgScrollTest", { clear = true })
+vim.api.nvim_create_autocmd("WinScrolled", {
+	group = refresh_group,
+	buffer = refresh_buf,
+	callback = function()
+		image_refreshes = image_refreshes + 1
+	end,
+})
+vim.api.nvim_create_autocmd("WinScrolled", {
+	group = scroll_group,
+	callback = function()
+		scroll_refreshes = scroll_refreshes + 1
+	end,
+})
+plugin.refresh()
+assert(image_refreshes == 1 and scroll_refreshes == 0, "Image refresh must not trigger scroll animations")
+vim.api.nvim_del_augroup_by_id(refresh_group)
+vim.api.nvim_del_augroup_by_id(scroll_group)
+vim.api.nvim_buf_delete(refresh_buf, { force = true })
 package.loaded.snacks = original
 plugin.resolve = saved_resolve
 vim.fn.delete(temp, "rf")

@@ -81,6 +81,41 @@ Rendering runs in the background, one diagram at a time.
 Saving a file again queues a fresh render.
 Failed Mermaid commands leave the existing images in place.
 
+## Inline Mermaid blocks
+
+MmdToImg detects top-level fenced `mermaid` blocks and renders them with the same pipeline as `.mmd` files.
+Snacks is used only to display the finished PNG.
+The image visually replaces the block while the Markdown source stays intact.
+By default, previews appear automatically in normal mode, including when the cursor is inside a block.
+Enter Insert mode inside the block to edit its source; return to normal mode to restore the preview.
+Opening Markdown, editing a block, and changing the colorscheme refresh previews without a command.
+MmdToImg renders into its own cache; no `.mmd` files or image links are added to your document.
+This also works for Markdown outside a repository, such as Difflab plans.
+
+Inline rendering uses the same command, timeout, light/dark configurations, scale and Puppeteer configuration as standalone rendering.
+The cache includes the source and renderer configuration, so theme changes produce fresh images.
+Images fit the usable window area, allowing for number/sign columns and margins.
+Keep using `:MmdToImgAll directory` for committed diagrams and image links.
+Set `inline_mermaid = false` to use Snacks' original Mermaid rendering instead.
+A supported terminal is required. Inline fence detection does not require Treesitter.
+The plugin temporarily enables conceal in preview windows and restores the previous settings when editing or disabling previews.
+
+An optional `inline_source_visible(buf, first, last)` callback controls visibility
+for each block. The fence line numbers are one-based and inclusive. Return `true`
+to show source, `false` to show the preview, or `nil` to use the default behavior.
+This callback takes priority in every mode. An existing render-markdown bridge
+can therefore keep its per-buffer `render_modes` and `anti_conceal` settings in
+control, including normal-mode source visibility.
+
+Unchanged refreshes preserve image placements and virtual rows. Neovim has a
+[scrolling bug around concealed and virtual lines](https://github.com/neovim/neovim/issues/42317)
+that can trap upward scrolling at one line. On Neovim 0.11.4 and later, buffers
+showing inline diagrams use a local guard for `Ctrl-Y` and upward mouse scrolling.
+It retries a stuck step with the cursor moved up so the viewport can advance.
+Existing user mappings are preserved. Snacks scroll animations are paused only
+in buffers with diagram previews because their native scroll replay bypasses
+the guard. The previous buffer settings and mappings return when previews close.
+
 ## Snacks image previews
 
 MmdToImg detects Snacks and configures image previews automatically.
@@ -97,6 +132,8 @@ require("mmdtoimg").setup({
   command = "mmdc",
   auto_render = true,
   snacks = true,
+  inline_mermaid = true,
+  theme = "default", -- or "nvim" to use the current editor colors
   scale = 2,
   timeout = 120000,
   -- light_config = "/path/to/light.json",
@@ -110,6 +147,23 @@ require("mmdtoimg").setup({
 The bundled theme files define the layout and colors.
 Custom theme files must produce the same layout in both themes.
 `puppeteer_config` passes a Puppeteer configuration file to the Mermaid CLI.
+
+Set `theme = "nvim"` to derive diagram colors from Neovim's `Normal`, `Function`,
+`Comment`, `String`, `Type`, and `DiagnosticWarn` highlights. Linked highlights
+are supported. Missing colors use bundled defaults; a transparent `Normal`
+background uses an opaque bundled background. If `Normal` has no foreground
+or background, the complete bundled palette is used.
+
+Only the variant matching `vim.o.background` uses the active editor palette.
+The opposite variant uses its bundled light or dark palette, so both outputs
+remain readable without changing your editor's colorscheme. Custom `light_config`
+and `dark_config` files take priority; their `themeVariables.background` also
+sets the renderer's canvas color. Diagram frontmatter can override Mermaid colors.
+
+Inline previews regenerate automatically after colorscheme or background changes.
+Standalone images adopt the current colors the next time you save or render
+those diagrams. The default `theme = "default"` keeps exported images consistent
+across developers, independent of their editor configuration.
 
 ## Development
 
@@ -126,7 +180,7 @@ mise run //libs/MmdToImg:lint
 mise run //libs/MmdToImg:test
 ```
 
-The tests cover rendering, theme selection, directory exclusions, rendering on save, and failed commands.
+The tests cover real flowchart and sequence rendering, theme fallbacks, directory exclusions, rendering on save, automatic inline previews, SVG references, source snapshots, and output rollback.
 CI runs the tests on Neovim 0.10.4 and 0.12.6.
 The plugin installs from Git and requires no uploaded release artifacts.
 

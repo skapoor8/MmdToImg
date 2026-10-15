@@ -22,6 +22,8 @@ CONFIGURATION                                              *mmdtoimg-config*
         command = "mmdc",
         auto_render = true,
         snacks = true,
+        inline_mermaid = true,
+        theme = "default", -- or "nvim"
         scale = 2,
         timeout = 120000,
         -- light_config = "/path/to/light.json",
@@ -29,9 +31,21 @@ CONFIGURATION                                              *mmdtoimg-config*
         -- puppeteer_config = "/path/to/puppeteer.json",
     })
 <
-Set auto_render to false to render only through commands.
+Set auto_render to false to disable rendering .mmd files on save.
+Inline previews refresh automatically unless inline_mermaid is false.
 Scale multiplies the PNG resolution. Timeout is milliseconds per CLI command.
 Custom Mermaid configurations must produce the same layout for both themes.
+
+Set theme = "nvim" to use the active Normal, Function, Comment, String, Type,
+and DiagnosticWarn highlights. Missing colors fall back to bundled defaults.
+Transparent backgrounds use the bundled opaque background. If Normal has no
+foreground or background, the entire bundled palette is used.
+Only the variant matching 'background' uses the editor palette; the opposite
+variant keeps its bundled palette. Custom light_config/dark_config files take
+priority. Their themeVariables.background also sets the PNG canvas background.
+Inline previews refresh after colorscheme and background changes. Save or render
+standalone diagrams again to update their exported colors.
+The default theme = "default" keeps exports independent of editor colors.
 
 SNACKS INTEGRATION                                         *mmdtoimg-snacks*
 
@@ -42,5 +56,27 @@ Set snacks = false in setup() to disable automatic integration.
 SVG links resolve to the PNG matching vim.o.background when it exists.
 Images refresh after generation and when the editor background changes.
 Browser SVGs select their theme with prefers-color-scheme.
+
+MmdToImg renders top-level Mermaid fences; Snacks displays the finished PNG.
+By default, previews appear in normal mode, even with the cursor in the block.
+Enter Insert mode inside the block to edit; return to normal mode for the image.
+Opening Markdown and editing blocks refresh previews without a command.
+The Markdown source is not changed. Window conceal settings are restored when
+editing source or disabling inline previews.
+Inline images use MmdToImg's configuration-aware cache, not adjacent files.
+All renderer settings apply, exactly as for .mmd files. Images fit the usable
+window area including number/sign columns. A supported terminal is required.
+An optional inline_source_visible(buf, first, last) callback overrides the
+fallback visibility rule. Fence rows are one-based and inclusive. Return true
+for source, false for preview, or nil for the default behavior. This preserves
+render-markdown integrations using render_modes and anti_conceal in every mode.
+Unchanged refreshes preserve image placements rather than rebuilding them.
+On Neovim 0.11.4+, inline previews guard CTRL-Y and upward mouse scrolling against
+Neovim's conceal_lines/virtual-line scrolling loop. Existing user mappings are
+kept. Snacks scroll animations are paused for buffers with diagram previews.
+Buffer settings and added mappings are restored when previews close.
+
+Nested list/blockquote fences remain available to Snacks' own renderer.
+Set inline_mermaid = false to retain Snacks' original inline configuration.
 
 vim:tw=78:ts=4:ft=help:norl:

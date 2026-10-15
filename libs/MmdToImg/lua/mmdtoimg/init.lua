@@ -1,29 +1,23 @@
 local M = {}
 local uv = vim.uv
 local plugin_dir = vim.fs.dirname(vim.fs.dirname(vim.fs.dirname(debug.getinfo(1, "S").source:sub(2))))
-local options = { command = "mmdc", auto_render = true, snacks = true, scale = 2, timeout = 120000 }
+local options = {
+	command = "mmdc",
+	auto_render = true,
+	snacks = true,
+	inline_mermaid = true,
+	theme = "default",
+	scale = 2,
+	timeout = 120000,
+}
 local pending, queue, active = {}, {}, false
 
 local function read(path)
 	return table.concat(vim.fn.readfile(path), "\n")
 end
 
--- Namespace each render so Mermaid's SVG IDs and styles cannot collide.
-local function combine(light, dark)
-	local viewbox = assert(light:match('viewBox="([^"]+)"'), "Missing SVG viewBox")
-	assert(dark:match('viewBox="([^"]+)"') == viewbox, "Theme layouts must have the same viewBox")
-	local dimensions = vim.split(viewbox, "%s+", { trimempty = true })
-	local function layer(svg, theme)
-		return svg:gsub("my%-svg", "diagram-" .. theme):gsub("<svg%s", '<svg height="100%%" ', 1)
-	end
-	return ('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="%s" width="%s" height="%s">\n'):format(
-		viewbox,
-		dimensions[3],
-		dimensions[4]
-	) .. "<style>\n#diagram-dark { display: none; }\n@media (prefers-color-scheme: dark) {\n#diagram-light { display: none; }\n#diagram-dark { display: inline; }\n}\n</style>\n" .. layer(
-		light,
-		"light"
-	) .. "\n" .. layer(dark, "dark") .. "\n</svg>\n"
+function M.settings()
+	return require("mmdtoimg.theme").snapshot(options, plugin_dir)
 end
 
 function M.refresh()
@@ -33,7 +27,11 @@ function M.refresh()
 			and vim.bo[buf].filetype == "markdown"
 			and vim.b[buf].snacks_image_attached
 		then
-			vim.api.nvim_exec_autocmds("WinScrolled", { buffer = buf, modeline = false })
+			-- Refresh only Snacks' image observer, never scroll animations or other plugins.
+			local group = "snacks.image.inline." .. buf
+			if vim.fn.exists("#" .. group .. "#WinScrolled") == 1 then
+				vim.api.nvim_exec_autocmds("WinScrolled", { group = group, buffer = buf, modeline = false })
+			end
 		end
 	end
 end
@@ -79,6 +77,7 @@ function M.attach_snacks()
 	local image = snacks.image
 	image.config.enabled = true
 	image.config.doc.enabled = true
+	require("mmdtoimg.inline").setup(M, options, plugin_dir, image)
 	if image.config.resolve ~= snacks_resolver or not snacks_resolver then
 		local previous = image.config.resolve
 		snacks_resolver = function(file, src)
@@ -99,31 +98,8 @@ end
 local run_next
 local function render(job, finish)
 	local temp = vim.fn.tempname()
-	vim.fn.mkdir(temp, "p")
+	local settings = job.settings
 	local base = job.path:gsub("%.mmd$", "")
-	local commands = {}
-	for _, theme in ipairs({ "light", "dark" }) do
-		for _, ext in ipairs({ "png", "svg" }) do
-			local args = {
-				options.command,
-				"-i",
-				job.path,
-				"-o",
-				temp .. "/" .. theme .. "." .. ext,
-				"-c",
-				options[theme .. "_config"] or plugin_dir .. "/themes/" .. theme .. ".json",
-				"-b",
-				theme == "light" and "white" or "#0f172a",
-			}
-			if options.puppeteer_config then
-				vim.list_extend(args, { "-p", options.puppeteer_config })
-			end
-			if ext == "png" then
-				vim.list_extend(args, { "-s", tostring(options.scale) })
-			end
-			commands[#commands + 1] = args
-		end
-	end
 	local function done(err)
 		vim.fn.delete(temp, "rf")
 		if err then
@@ -133,32 +109,58 @@ local function render(job, finish)
 		end
 		finish(err)
 	end
+	local commands = {}
+	local prepared, prepare_err = pcall(function()
+		vim.fn.mkdir(temp, "p")
+		assert(uv.fs_copyfile(job.path, temp .. "/source.mmd"))
+		if settings.puppeteer then
+			vim.fn.writefile(vim.split(settings.puppeteer, "\n"), temp .. "/puppeteer.json")
+		end
+		for _, theme in ipairs({ "light", "dark" }) do
+			local config = temp .. "/" .. theme .. ".json"
+			vim.fn.writefile({ vim.json.encode(settings.themes[theme].config) }, config)
+			for _, ext in ipairs({ "png", "svg" }) do
+				local args = {
+					settings.command,
+					"-i",
+					temp .. "/source.mmd",
+					"-o",
+					temp .. "/" .. theme .. "." .. ext,
+					"-c",
+					config,
+					"-b",
+					settings.themes[theme].background,
+				}
+				if settings.puppeteer then
+					vim.list_extend(args, { "-p", temp .. "/puppeteer.json" })
+				end
+				if ext == "png" then
+					vim.list_extend(args, { "-s", tostring(settings.scale) })
+				end
+				commands[#commands + 1] = args
+			end
+		end
+	end)
+	if not prepared then
+		done(tostring(prepare_err))
+		return
+	end
 	local function step(index)
 		if index > #commands then
 			local ok, err = pcall(function()
 				vim.fn.writefile(
-					vim.split(combine(read(temp .. "/light.svg"), read(temp .. "/dark.svg")), "\n"),
+					vim.split(
+						require("mmdtoimg.svg").combine(read(temp .. "/light.svg"), read(temp .. "/dark.svg")),
+						"\n"
+					),
 					temp .. "/combined.svg"
 				)
-				for _, output in ipairs({
-					{ "light.png", ".light.png" },
-					{ "dark.png", ".dark.png" },
-					{ "combined.svg", ".svg" },
-				}) do
-					local destination = base .. output[2]
-					local staged = destination .. ".mmdtoimg-tmp"
-					assert(uv.fs_copyfile(temp .. "/" .. output[1], staged))
-					local renamed, rename_err = uv.fs_rename(staged, destination)
-					if not renamed then
-						uv.fs_unlink(staged)
-						error(rename_err)
-					end
-				end
+				require("mmdtoimg.outputs").publish(temp, base)
 			end)
 			done(not ok and tostring(err) or nil)
 			return
 		end
-		local ok, err = pcall(vim.system, commands[index], { text = true, timeout = options.timeout }, function(result)
+		local ok, err = pcall(vim.system, commands[index], { text = true, timeout = settings.timeout }, function(result)
 			vim.schedule(function()
 				if result.code ~= 0 then
 					done(
@@ -198,17 +200,19 @@ run_next = function()
 	end)
 end
 
-function M.render(path, callback)
+function M.render(path, callback, settings)
 	path = vim.fs.normalize(vim.fn.fnamemodify(path or vim.api.nvim_buf_get_name(0), ":p"))
 	if not path:match("%.mmd$") or vim.fn.filereadable(path) ~= 1 then
 		error("MmdToImg requires an existing .mmd file: " .. path)
 	end
+	settings = settings or M.settings()
 	local job = pending[path]
 	if not job then
 		job = { path = path, callbacks = {} }
 		pending[path] = job
 		queue[#queue + 1] = job
 	end
+	job.settings = settings
 	if callback then
 		job.callbacks[#job.callbacks + 1] = callback
 	end
@@ -252,7 +256,15 @@ function M.render_all(dir, callback)
 end
 
 function M.setup(opts)
-	options = vim.tbl_extend("force", options, opts or {})
+	local updated = vim.tbl_extend("force", options, opts or {})
+	assert(updated.theme == "default" or updated.theme == "nvim", 'theme must be "default" or "nvim"')
+	options = updated
+	if not options.snacks then
+		local inline = package.loaded["mmdtoimg.inline"]
+		if inline then
+			inline.stop()
+		end
+	end
 	vim.api.nvim_create_user_command("MmdToImg", function(args)
 		M.render(args.args ~= "" and args.args or nil)
 	end, { nargs = "?", complete = "file", force = true })
