@@ -190,11 +190,12 @@ across developers, independent of their editor configuration.
 The implementation, themes, tests, documentation, and development tools live in `libs/MmdToImg`.
 The root `doc` symlink exposes `libs/MmdToImg/docs` to Neovim’s help system.
 Run `:helptags ALL` once after a manual installation, then open `:help mmdtoimg.txt`.
+Use Mise 2026.10.15 or later to install the locked tool dependencies.
 Install the tools and run the checks:
 
 ```sh
 mise trust
-mise -C libs/MmdToImg install
+mise -C libs/MmdToImg install --locked
 mise run //libs/MmdToImg:install
 mise run //libs/MmdToImg:build
 mise run //libs/MmdToImg:lint

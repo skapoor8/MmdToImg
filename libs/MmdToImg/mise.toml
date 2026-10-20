@@ -1,7 +1,7 @@
 [tools]
 node = "24"
 neovim = "0.12.6"
-"npm:@mermaid-js/mermaid-cli" = "12.0.0"
+"npm:@mermaid-js/mermaid-cli" = { version = "12.0.0", allow_builds = ["puppeteer"] }
 stylua = "2.1.0"
 
 [tasks.install]
