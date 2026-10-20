@@ -18,6 +18,10 @@ The optional Snacks integration displays the PNG that matches `vim.o.background`
 
 ### lazy.nvim
 
+The plugin lives in `libs/MmdToImg`.
+Add that directory to Neovim’s runtime path before you call `setup()`.
+The runtime path is the list of directories that Neovim searches for plugins.
+
 Add this plugin specification:
 
 ```lua
@@ -25,8 +29,11 @@ Add this plugin specification:
   "skapoor8/MmdToImg",
   version = "*",
   lazy = false,
-  main = "mmdtoimg",
   opts = {},
+  config = function(plugin, opts)
+    vim.opt.runtimepath:append(plugin.dir .. "/libs/MmdToImg")
+    require("mmdtoimg").setup(opts)
+  end,
 }
 ```
 
@@ -35,26 +42,39 @@ Add this plugin specification:
 Add the plugin to your vim-plug block and run `:PlugInstall`:
 
 ```vim
-Plug 'skapoor8/MmdToImg', { 'tag': 'v0.1.0' }
+call plug#begin(stdpath('data') . '/plugged')
+Plug 'skapoor8/MmdToImg', { 'tag': '*' }
+call plug#end()
 ```
 
-Then configure the plugin:
+After `plug#end()`, configure the plugin:
 
 ```lua
+local root = vim.fn.stdpath("data") .. "/plugged/MmdToImg"
+vim.opt.runtimepath:append(root .. "/libs/MmdToImg")
 require("mmdtoimg").setup()
 ```
+
+If you use a different vim-plug installation directory, change `root` to match it.
 
 ### Native Git packages
 
 Clone the plugin into Neovim's package directory:
 
 ```sh
-git clone --branch v0.1.0 --depth 1 https://github.com/skapoor8/MmdToImg.git \
+git clone --depth 1 https://github.com/skapoor8/MmdToImg.git \
   ~/.local/share/nvim/site/pack/plugins/start/MmdToImg
 ```
 
-Then call `require("mmdtoimg").setup()` from your Neovim configuration.
-Adjust the package directory if you use a custom Neovim data directory.
+Add this to your Neovim configuration:
+
+```lua
+local root = vim.fn.stdpath("data") .. "/site/pack/plugins/start/MmdToImg"
+vim.opt.runtimepath:append(root .. "/libs/MmdToImg")
+require("mmdtoimg").setup()
+```
+
+If you use a custom package directory, change `root` to match it.
 
 ## Usage
 
@@ -167,13 +187,15 @@ across developers, independent of their editor configuration.
 
 ## Development
 
-The implementation and themes live in `libs/MmdToImg`.
-The root Lua entry point lets Neovim load the plugin from this repository.
+The implementation, themes, tests, documentation, and development tools live in `libs/MmdToImg`.
+The root `doc` symlink exposes `libs/MmdToImg/docs` to Neovim’s help system.
+Run `:helptags ALL` once after a manual installation, then open `:help mmdtoimg.txt`.
+Use Mise 2026.10.15 or later to install the locked tool dependencies.
 Install the tools and run the checks:
 
 ```sh
 mise trust
-mise install
+mise -C libs/MmdToImg install --locked
 mise run //libs/MmdToImg:install
 mise run //libs/MmdToImg:build
 mise run //libs/MmdToImg:lint
@@ -181,7 +203,7 @@ mise run //libs/MmdToImg:test
 ```
 
 The tests cover real flowchart and sequence rendering, theme fallbacks, directory exclusions, rendering on save, automatic inline previews, SVG references, source snapshots, and output rollback.
-CI runs the tests on Neovim 0.10.4 and 0.12.6.
+Premise runs the checks using the tool versions declared in `mise.toml`.
 The plugin installs from Git and requires no uploaded release artifacts.
 
 ## License

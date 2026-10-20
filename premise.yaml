@@ -14,3 +14,5 @@ workspace:
           template: cloudvoyant/premise:premise-lib
           version: 0.1.0
           path: libs/MmdToImg
+          answers:
+            name: MmdToImg

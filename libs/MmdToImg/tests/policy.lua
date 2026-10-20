@@ -5,7 +5,7 @@ local mode, policy = "n", nil
 local active, created = {}, 0
 local paths = {}
 local opts = { command = "mmdc", scale = 2, snacks = true, inline_mermaid = true }
-local root = vim.uv.cwd() .. "/libs/MmdToImg"
+local root = vim.uv.cwd()
 local backend = {
 	doc = {
 		find = function(_, cb)

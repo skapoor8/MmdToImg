@@ -1,5 +1,5 @@
 local theme = require("mmdtoimg.theme")
-local root = vim.uv.cwd() .. "/libs/MmdToImg"
+local root = vim.uv.cwd()
 local background = vim.o.background
 local groups = { "Normal", "Function", "Comment", "String", "Type", "DiagnosticWarn" }
 local saved = {}

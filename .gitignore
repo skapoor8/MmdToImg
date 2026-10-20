@@ -1,4 +1,5 @@
 *.mmdtoimg-tmp
 .DS_Store
 doc/tags
+libs/MmdToImg/docs/tags
 node_modules/

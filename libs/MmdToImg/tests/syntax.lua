@@ -1,4 +1,4 @@
-for _, dir in ipairs({ "lua", "libs/MmdToImg/lua", "tests" }) do
+for _, dir in ipairs({ "lua", "tests" }) do
 	for _, path in
 		ipairs(vim.fs.find(function(name)
 			return name:match("%.lua$") ~= nil
