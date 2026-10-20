@@ -1,4 +1,4 @@
--- Run from the plugin directory: nvim --headless -u NONE -l tests/smoke.lua
+-- Run from libs/MmdToImg: nvim --headless -u NONE -l tests/smoke.lua
 vim.opt.runtimepath:prepend(vim.uv.cwd())
 local plugin = require("mmdtoimg")
 dofile("tests/snacks.lua")

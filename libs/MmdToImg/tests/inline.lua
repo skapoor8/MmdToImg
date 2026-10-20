@@ -45,7 +45,7 @@ local backend = {
 	},
 }
 local opts = { command = "mmdc", scale = 2, snacks = true, inline_mermaid = true }
-local root = vim.uv.cwd() .. "/libs/MmdToImg"
+local root = vim.uv.cwd()
 local callbacks = {}
 local fake = {
 	render = function(path, cb)

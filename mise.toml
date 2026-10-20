@@ -4,12 +4,7 @@
 monorepo_root = true
 
 [env]
-_.path = ["{{config_root}}/node_modules/.bin", "{{config_root}}/bin"]
+_.path = ["{{config_root}}/bin"]
 
 [monorepo]
 config_roots = ["apps/*", "libs/*"]
-
-[tools]
-node = "24"
-neovim = "0.12.6"
-stylua = "2.1.0"

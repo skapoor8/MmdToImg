@@ -136,7 +136,7 @@ local ok, err = pcall(function()
 	assert(active == 0, "Opt-out must remove inline placements")
 	assert(vim.wo.conceallevel == 0 and vim.wo.concealcursor == "", "Opt-out must restore conceal settings")
 	updates = 0
-	inline.setup(plugin, { snacks = true, inline_mermaid = true }, vim.uv.cwd() .. "/libs/MmdToImg", backend)
+	inline.setup(plugin, { snacks = true, inline_mermaid = true }, vim.uv.cwd(), backend)
 	inline.stop()
 	vim.wait(250, function()
 		return false

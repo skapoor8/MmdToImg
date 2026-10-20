@@ -1,30 +1,50 @@
+[tools]
+node = "24"
+neovim = "0.12.6"
+"npm:@mermaid-js/mermaid-cli" = "12.0.0"
+stylua = "2.1.0"
+
 [tasks.install]
-description = "Install the pinned renderer for development"
-dir = "{{config_root}}/../.."
-run = "npm ci"
+description = "Install project dependencies"
+run = 'mmdc --version'
 
 [tasks.build]
-description = "Check Lua syntax"
-dir = "{{config_root}}/../.."
-run = "nvim --headless -u NONE -l tests/syntax.lua"
+description = "Run the build contract"
+run = 'nvim --headless -u NONE -l tests/syntax.lua'
+
+[tasks.clean]
+description = "Run the clean contract"
+run = 'echo "MmdToImg: clean"'
 
 [tasks.test]
-description = "Test rendering and Neovim integration"
-dir = "{{config_root}}/../.."
-run = "nvim --headless -u NONE -l tests/smoke.lua"
+env = { MMD_TO_IMG_PUPPETEER_CONFIG = "{{config_root}}/tests/puppeteer.json" }
+description = "Run the test contract"
+run = 'nvim --headless -u NONE -l tests/smoke.lua'
 
 [tasks.lint]
-description = "Check Lua formatting"
-dir = "{{config_root}}/../.."
-run = "stylua --check lua libs/MmdToImg/lua tests"
+description = "Run the lint contract"
+run = 'stylua --check lua tests'
 
 [tasks."lint:fix"]
-description = "Format Lua files"
-dir = "{{config_root}}/../.."
-run = "stylua lua libs/MmdToImg/lua tests"
+description = "Run the lint:fix contract"
+run = 'stylua lua tests'
 
 [tasks.format]
-depends = ["lint:fix"]
+description = "Run the format contract"
+run = 'stylua lua tests'
 
 [tasks."format:check"]
-depends = ["lint"]
+description = "Run the format:check contract"
+run = 'stylua --check lua tests'
+
+[tasks.env-pull]
+description = "Run the env-pull contract"
+run = 'echo "MmdToImg: env-pull"'
+
+[tasks."publish:rc"]
+description = "Run the publish:rc contract"
+run = 'echo "MmdToImg: publish:rc"'
+
+[tasks.publish]
+description = "Run the publish contract"
+run = 'echo "MmdToImg: publish"'

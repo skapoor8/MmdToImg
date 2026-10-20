@@ -4,7 +4,13 @@ MmdToImg requires Neovim 0.10 or later and the Mermaid CLI (mmdc).
 
 SETUP                                                       *mmdtoimg-setup*
 
-Call require("mmdtoimg").setup() in your Neovim configuration.
+The plugin lives in libs/MmdToImg inside the repository.
+Add that directory to 'runtimepath' before you call setup():
+>
+    vim.opt.runtimepath:append("/path/to/MmdToImg/libs/MmdToImg")
+    require("mmdtoimg").setup()
+<
+See the repository README for plugin-manager installation examples.
 Saving a .mmd file generates an adaptive SVG and light/dark PNGs beside it.
 
 COMMANDS                                                   *mmdtoimg-commands*
